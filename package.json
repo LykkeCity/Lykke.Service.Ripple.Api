@@ -1,0 +1,31 @@
+{
+  "name": "Lykke.Service.Ripple.Api",
+  "version": "1.0.0",
+  "description": "Ripple blockchain integration, main API",
+  "main": "./build/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Lykke",
+  "license": "ISC",
+  "dependencies": {
+    "@types/applicationinsights": "^0.20.0",
+    "@types/koa": "^2.0.46",
+    "@types/koa-bodyparser": "^4.2.0",
+    "@types/koa-router": "^7.0.30",
+    "@types/mongodb": "^3.1.1",
+    "@types/node": "^10.5.1",
+    "applicationinsights": "^1.0.4",
+    "axios": "^0.18.0",
+    "azure-storage": "^2.10.0",
+    "koa": "^2.5.1",
+    "koa-bodyparser": "^4.2.1",
+    "koa-multer": "^1.0.2",
+    "koa-router": "^7.4.0",
+    "mongodb": "^3.1.0",
+    "reflect-metadata": "^0.1.12",
+    "ripple-lib": "^1.0.0",
+    "routing-controllers": "^0.7.7",
+    "typedi": "^0.7.3"
+  }
+}
