@@ -204,7 +204,9 @@ export class TransactionsController {
 
             const feeAmount = await this.rippleService.getFee();
             const fee = parseFloat(feeAmount);
-            const required: any = {};
+            const required: any = {
+                XRP: this.settings.RippleApi.Ripple.Reserve || 0
+            };
 
             if (request.assetId == XRP) {
                 if (request.includeFee) {
@@ -214,9 +216,9 @@ export class TransactionsController {
                         throw new BlockchainError(400, `Amount [${amount}] is less than fee [${fee}]`, ErrorCode.amountIsTooSmall);
                     }
                 }
-                required[XRP] = amount + fee;
+                required[XRP] += amount + fee;
             } else {
-                required[XRP] = fee;
+                required[XRP] += fee;
                 required[request.assetId] = amount;
             }
 
@@ -291,9 +293,9 @@ export class TransactionsController {
         if (!operation) {
             // transaction must be built before
             throw new BlockchainError(400, `Unknown operation [${request.operationId}]`);
-        } else if (!!operation.SendTime) {
+        } else if (operation.isSent() || operation.isCompleted() || operation.isFailed()) {
             // sendTime is not null only if all related data already successfully saved
-            throw new BlockchainError(409, `Operation [${request.operationId}] already broadcasted`);
+            throw new BlockchainError(409, `Operation [${request.operationId}] already ${this.getState(operation)}`);
         }
 
         const sendTime = new Date();
@@ -303,6 +305,8 @@ export class TransactionsController {
         const data = fromBase64<SignedTransactionModel>(request.signedTransaction);
         const txId = data.id;
 
+        await this.operationRepository.update(operation.OperationId, { txId });
+
         if (!!data.signedTransaction) {
 
             // send real transaction to the blockchain,
@@ -310,17 +314,19 @@ export class TransactionsController {
             // included in block and when it becomes irreversible,
             // and mark operation as sent
 
-            try {
-                await this.rippleService.submit(data.signedTransaction);
-            } catch (error) {
-                if (!!error.data && error.data.code == 4030100) {
-                    throw new BlockchainError(400, "Transaction rejected", ErrorCode.buildingShouldBeRepeated, error.data);
-                } else {
-                    throw error;
-                }
+            const result = await this.rippleService.submit(data.signedTransaction);
+
+            // most of broadcasting result states are not final and even valid transaction may be not applied due to various reasons,
+            // so we delegate recognizing transaction state to tracking job and return OK at the moment;
+            // for details see https://developers.ripple.com/finality-of-results.html
+
+            if (result.resultCode == "tefPAST_SEQ") {
+                throw new BlockchainError(400, "Transaction rejected", ErrorCode.buildingShouldBeRepeated, result);
+            } else if (result.resultCode.startsWith("tem")) {
+                throw new BlockchainError(400, "Transaction rejected", ErrorCode.unknown, result);
             }
 
-            await this.operationRepository.update(operation.OperationId, { sendTime, txId });
+            await this.operationRepository.update(operation.OperationId, { sendTime });
         } else {
 
             // for simulated transaction we immediately update balances and history,
@@ -341,7 +347,7 @@ export class TransactionsController {
                 operation.AssetId, operation.Amount, operation.AmountInBaseUnit,
                 block, blockTime, txId, operation.OperationId);
             
-            await this.operationRepository.update(operation.OperationId, { sendTime, txId, completionTime, blockTime, block });
+            await this.operationRepository.update(operation.OperationId, { sendTime, completionTime, blockTime, block });
         }
 
         return {

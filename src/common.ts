@@ -68,6 +68,7 @@ export class Settings {
         Ripple: {
             Expiration: number;
             Url: string;
+            Reserve: number;
         }
     };
 }
