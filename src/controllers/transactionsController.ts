@@ -224,14 +224,13 @@ export class TransactionsController {
 
             // check balances of "from" address
 
-            const balanceSheet = await this.rippleService.getBalanceSheet(from);
-            const balances = !!balanceSheet.balances && balanceSheet.balances.reduce((p: any, c) => { 
-                p[c.currency] = parseFloat(c.value);
-                return p;
+            const balances = (await this.rippleService.getBalances(from)).reduce((r: any, b) => { 
+                r[b.currency] = parseFloat(b.value);
+                return r;
             }, {});
 
             for (const k of Object.getOwnPropertyNames(required)) {
-                if (!balances || !balances[k] || balances[k] < required[k]) {
+                if (!balances[k] || balances[k] < required[k]) {
                     throw new BlockchainError(400, `Not enough [${k}] on address [${from}]`, ErrorCode.notEnoughBalance);
                 }
             }
@@ -247,7 +246,7 @@ export class TransactionsController {
                 source: {
                     address: from,
                     tag: fromTag && parseInt(fromTag),
-                    amount: assetAmount
+                    maxAmount: assetAmount
                 },
                 destination: {
                     address: to,
@@ -318,7 +317,9 @@ export class TransactionsController {
 
             // most of broadcasting result states are not final and even valid transaction may be not applied due to various reasons,
             // so we delegate recognizing transaction state to tracking job and return OK at the moment;
-            // for details see https://developers.ripple.com/finality-of-results.html
+            // for details see:
+            // - https://developers.ripple.com/finality-of-results.html
+            // - https://developers.ripple.com/reliable-transaction-submission.html
 
             if (result.resultCode == "tefPAST_SEQ") {
                 throw new BlockchainError(400, "Transaction rejected", ErrorCode.buildingShouldBeRepeated, result);

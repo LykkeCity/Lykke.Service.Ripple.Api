@@ -5,7 +5,7 @@ import { Instructions, Prepare } from "ripple-lib/dist/npm/transaction/types";
 import { Payment } from "ripple-lib/dist/npm/transaction/payment";
 import { FormattedGetAccountInfoResponse } from "ripple-lib/dist/npm/ledger/accountinfo";
 import { FormattedSubmitResponse } from "ripple-lib/dist/npm/transaction/submit";
-import { GetBalanceSheet } from "ripple-lib/dist/npm/ledger/balance-sheet";
+import { Balance } from "ripple-lib/dist/npm/ledger/balances";
 
 @Service()
 export class RippleService {
@@ -40,8 +40,8 @@ export class RippleService {
         return this.api().then(api => api.getLedgerVersion());
     }
 
-    getBalanceSheet(address: string): Promise<GetBalanceSheet> {
-        return this.api().then(api => api.getBalanceSheet(address));
+    getBalances(address: string): Promise<Balance[]> {
+        return this.api().then(api => api.getBalances(address));
     }
 
     submit(signedTransaction: string): Promise<FormattedSubmitResponse> {
