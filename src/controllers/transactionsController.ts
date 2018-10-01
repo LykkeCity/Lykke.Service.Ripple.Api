@@ -2,7 +2,7 @@ import { JsonController, Body, Get, Post, Put, Delete, OnUndefined, QueryParam }
 import { IsArray, IsString, IsNotEmpty, IsBase64, IsUUID } from "class-validator";
 import { AssetRepository } from "../domain/assets";
 import { OperationRepository, OperationEntity, ErrorCode } from "../domain/operations";
-import { fromBase64, ADDRESS_SEPARATOR, ParamIsUuid, QueryParamIsPositiveInteger, IsRippleAddress, ParamIsRippleAddress, XRP, DUMMY_TX, Settings } from "../common";
+import { fromBase64, ADDRESS_SEPARATOR, ParamIsUuid, QueryParamIsPositiveInteger, IsRippleAddress, ParamIsRippleAddress, XRP, DUMMY_TX, Settings, toBase64 } from "../common";
 import { NotImplementedError } from "../errors/notImplementedError";
 import { LogService, LogLevel } from "../services/logService";
 import { BlockchainError } from "../errors/blockchainError";
@@ -166,8 +166,8 @@ export class TransactionsController {
     async buildSingle(@Body({ required: true }) request: BuildSingleRequest) {
         const operation = await this.operationRepository.get(request.operationId);
         
-        if (!!operation && operation.isSent()) {
-            throw new BlockchainError(409, `Operation [${request.operationId}] already broadcasted`);
+        if (!!operation && (operation.isSent() || operation.isCompleted() || operation.isFailed())) {
+            throw new BlockchainError(409, `Operation [${request.operationId}] already ${this.getState(operation)}`);
         }
 
         const asset = await this.assetRepository.get(request.assetId);
@@ -184,7 +184,7 @@ export class TransactionsController {
 
         let amount = asset.fromBaseUnit(amountInBaseUnit);
         let expiration: number;
-        let transactionContext: string;
+        let tx: string;
         
         const [from, fromTag] = request.fromAddress.split(ADDRESS_SEPARATOR);
         const [to, toTag] = request.toAddress.split(ADDRESS_SEPARATOR);
@@ -196,7 +196,7 @@ export class TransactionsController {
                 throw new BlockchainError(400, `Not enough [${request.assetId}] on address [${request.fromAddress}]`, ErrorCode.notEnoughBalance);
             }
             expiration = undefined;
-            transactionContext = DUMMY_TX;
+            tx = DUMMY_TX;
         } else {
 
             // refine amounts and fees depending on asset,
@@ -258,15 +258,15 @@ export class TransactionsController {
                 fee: feeAmount
             });
 
-            expiration = transaction.instructions.maxLedgerVersion;            
-            transactionContext = transaction.txJSON;
+            expiration = transaction.instructions.maxLedgerVersion * 10;            
+            tx = transaction.txJSON;
         }
 
         await this.operationRepository.upsert(request.operationId, request.assetId, request.fromAddress,
             request.toAddress, amount, amountInBaseUnit, expiration);
 
         return {
-            transactionContext
+            transactionContext: toBase64(tx)
         };
     }
 
@@ -321,7 +321,7 @@ export class TransactionsController {
             // - https://developers.ripple.com/finality-of-results.html
             // - https://developers.ripple.com/reliable-transaction-submission.html
 
-            if (result.resultCode == "tefPAST_SEQ") {
+            if (result.resultCode == "tefPAST_SEQ" || result.resultCode == "tefMAX_LEDGER") {
                 throw new BlockchainError(400, "Transaction rejected", ErrorCode.buildingShouldBeRepeated, result);
             } else if (result.resultCode.startsWith("tem")) {
                 throw new BlockchainError(400, "Transaction rejected", ErrorCode.unknown, result);
