@@ -131,7 +131,7 @@ export function IsRippleAddress() {
             propertyName: propertyName,
             validator: {
                 defaultMessage() {
-                    return `Property [${propertyName}] is invalid, must be valid Ripple address with optional extension.`
+                    return `Property [${propertyName}] is invalid, if specified must be valid Ripple address with optional extension.`
                 },
                 validate(val: any) {
                     return isString(val) && isRippleAddress(val);

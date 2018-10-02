@@ -4,11 +4,16 @@ import { AssetRepository } from "../domain/assets";
 import { ParamsRepository } from "../domain/params";
 import { IsNotEmpty, IsString } from "class-validator";
 import { MongoClient } from "mongodb";
+import { isString } from "util";
 
 class MigrateRequest {
     @IsNotEmpty()
     @IsString()
     connectionString: string;
+
+    @IsNotEmpty()
+    @IsString()
+    db: string;
 }
 
 @JsonController("/migrate")
@@ -23,7 +28,7 @@ export class MigrateController {
     @Post()
     async fromV1toV2(@Body({ required: true }) request: MigrateRequest) {
         const client = await MongoClient.connect(request.connectionString, { useNewUrlParser: true });
-        const db = client.db("ripple");
+        const db = client.db(request.db);
         const observableAddresses = await db.collection("accounts")
             .find()
             .map(_ => _._id)
