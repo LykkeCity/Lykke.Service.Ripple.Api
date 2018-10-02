@@ -1,6 +1,6 @@
 import { JsonController, Get, Param } from "routing-controllers";
 import { NotImplementedError } from "../errors/notImplementedError";
-import { isRippleAddress, ParamIsRippleAddress } from "../common";
+import { isRippleAddress, ParamIsRippleAddress, ADDRESS_SEPARATOR } from "../common";
 import { RippleService } from "../services/rippleService";
 
 @JsonController("/addresses")
@@ -18,7 +18,7 @@ export class AddressesController {
     async isValid(@Param("address") address: string) {
         return {
             isValid: isRippleAddress(address) &&
-                !!(await this.rippleService.getAccountInfo(address).then(_ => true).catch(_ => false))
+                !!(await this.rippleService.getAccountInfo(address.split(ADDRESS_SEPARATOR)[0]).then(_ => true).catch(_ => false))
         };
     }
 }
