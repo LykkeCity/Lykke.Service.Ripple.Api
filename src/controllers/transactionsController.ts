@@ -2,7 +2,7 @@ import { JsonController, Body, Get, Post, Put, Delete, OnUndefined, QueryParam }
 import { IsArray, IsString, IsNotEmpty, IsBase64, IsUUID } from "class-validator";
 import { AssetRepository } from "../domain/assets";
 import { OperationRepository, OperationEntity, ErrorCode } from "../domain/operations";
-import { fromBase64, ADDRESS_SEPARATOR, ParamIsUuid, QueryParamIsPositiveInteger, IsRippleAddress, ParamIsRippleAddress, XRP, DUMMY_TX, Settings, toBase64 } from "../common";
+import { fromBase64, ADDRESS_SEPARATOR, ParamIsUuid, QueryParamIsPositiveInteger, IsRippleAddress, ParamIsRippleAddress, XRP, DUMMY_TX, Settings, toBase64, XRP_ACCURACY } from "../common";
 import { NotImplementedError } from "../errors/notImplementedError";
 import { LogService, LogLevel } from "../services/logService";
 import { BlockchainError } from "../errors/blockchainError";
@@ -185,6 +185,8 @@ export class TransactionsController {
         let amount = asset.fromBaseUnit(amountInBaseUnit);
         let expiration: number;
         let tx: string;
+        let fee: number;
+        let feeInBaseUnit: number;
         
         const [from, fromTag] = request.fromAddress.split(ADDRESS_SEPARATOR);
         const [to, toTag] = request.toAddress.split(ADDRESS_SEPARATOR);
@@ -197,16 +199,18 @@ export class TransactionsController {
             }
             expiration = undefined;
             tx = DUMMY_TX;
+            fee = 0;
+            feeInBaseUnit = 0;
         } else {
 
             // refine amounts and fees depending on asset,
             // fee is accounted in native asset (XRP)
-
+            
+            const required: any = { XRP: this.settings.RippleApi.Ripple.Reserve || 0 };
             const feeAmount = await this.rippleService.getFee();
-            const fee = parseFloat(feeAmount);
-            const required: any = {
-                XRP: this.settings.RippleApi.Ripple.Reserve || 0
-            };
+
+            fee = parseFloat(feeAmount);
+            feeInBaseUnit = fee * Math.pow(10, XRP_ACCURACY);
 
             if (request.assetId == XRP) {
                 if (request.includeFee) {
@@ -263,7 +267,7 @@ export class TransactionsController {
         }
 
         await this.operationRepository.upsert(request.operationId, request.assetId, request.fromAddress,
-            request.toAddress, amount, amountInBaseUnit, expiration);
+            request.toAddress, amount, amountInBaseUnit, fee, feeInBaseUnit, expiration);
 
         return {
             transactionContext: toBase64(tx)
@@ -365,7 +369,7 @@ export class TransactionsController {
                 state: this.getState(operation),
                 timestamp: this.getTimestamp(operation),
                 amount: operation.AmountInBaseUnit.toFixed(),
-                fee: "0",
+                fee: operation.FeeInBaseUnit.toFixed(),
                 hash: operation.TxId,
                 block: operation.Block,
                 error: operation.Error,

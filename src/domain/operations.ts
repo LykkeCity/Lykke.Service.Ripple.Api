@@ -26,6 +26,12 @@ export class OperationEntity extends AzureEntity {
     @Int64()
     AmountInBaseUnit: number;
 
+    @Double()
+    Fee: number;
+
+    @Int64()
+    FeeInBaseUnit: number;
+
     BuildTime: Date;
     SendTime: Date;
     TxId: string;
@@ -88,7 +94,8 @@ export class OperationRepository extends AzureRepository {
         super(settings.RippleApi.Azure.ConnectionString);
     }
 
-    async upsert(operationId: string, assetId: string, fromAddress: string, toAddress: string, amount: number, amountInBaseUnit: number, expiration?: number) {
+    async upsert(operationId: string, assetId: string, fromAddress: string, toAddress: string, amount: number, amountInBaseUnit: number,
+        fee: number, feeInBaseUnit: number, expiration?: number) {
         
         const operationEntity = new OperationEntity();
         operationEntity.PartitionKey = operationId;
@@ -100,6 +107,8 @@ export class OperationRepository extends AzureRepository {
         operationEntity.AmountInBaseUnit = amountInBaseUnit;
         operationEntity.BuildTime = new Date();
         operationEntity.Expiration = expiration;
+        operationEntity.Fee = fee;
+        operationEntity.FeeInBaseUnit = feeInBaseUnit;
 
         await this.insertOrMerge(this.operationTableName, operationEntity);
 
