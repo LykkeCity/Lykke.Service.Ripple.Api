@@ -49,16 +49,12 @@ export class OperationEntity extends AzureEntity {
     ErrorCode: ErrorCode;
     DeleteTime: Date;
 
-    isCompleted(): boolean {
-        return !!this.CompletionTime;
-    }
-
-    isFailed(): boolean {
-        return !!this.FailTime;
-    }
-
-    isSent(): boolean {
-        return !!this.SendTime;
+    /**
+     * Returns true if operation is not fully processed by common services (is sent, completed or failed),
+     * otherwise false (is just built or already deleted).
+     */
+    get isRunning(): boolean {
+        return !!this.SendTime || !!this.CompletionTime || !!this.FailTime;
     }
 }
 

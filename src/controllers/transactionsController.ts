@@ -166,7 +166,7 @@ export class TransactionsController {
     async buildSingle(@Body({ required: true }) request: BuildSingleRequest) {
         const operation = await this.operationRepository.get(request.operationId);
         
-        if (!!operation && (operation.isSent() || operation.isCompleted() || operation.isFailed())) {
+        if (!!operation && operation.isRunning) {
             throw new BlockchainError(409, `Operation [${request.operationId}] already ${this.getState(operation)}`);
         }
 
@@ -296,7 +296,7 @@ export class TransactionsController {
         if (!operation) {
             // transaction must be built before
             throw new BlockchainError(400, `Unknown operation [${request.operationId}]`);
-        } else if (operation.isSent() || operation.isCompleted() || operation.isFailed()) {
+        } else if (operation.isRunning) {
             // sendTime is not null only if all related data already successfully saved
             throw new BlockchainError(409, `Operation [${request.operationId}] already ${this.getState(operation)}`);
         }
@@ -363,7 +363,7 @@ export class TransactionsController {
     @Get("/broadcast/single/:operationId")
     async getSingle(@ParamIsUuid("operationId") operationId: string) {
         const operation = await this.operationRepository.get(operationId);
-        if (!!operation && operation.isSent()) {
+        if (!!operation && operation.isRunning) {
             return {
                 operationId,
                 state: this.getState(operation),
