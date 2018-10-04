@@ -311,6 +311,8 @@ export class TransactionsController {
         const data = fromBase64<SignedTransactionModel>(request.signedTransaction);
         const txId = data.id;
 
+        // connect operation to transaction before broadcasting to process transaction
+        // correctly in case of errors between broadcasting and saving operation state 
         await this.operationRepository.update(operation.OperationId, { txId });
 
         if (!!data.signedTransaction) {
