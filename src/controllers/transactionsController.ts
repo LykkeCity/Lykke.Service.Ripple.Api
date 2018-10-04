@@ -296,8 +296,11 @@ export class TransactionsController {
         if (!operation) {
             // transaction must be built before
             throw new BlockchainError(400, `Unknown operation [${request.operationId}]`);
-        } else if (operation.isRunning) {
-            // sendTime is not null only if all related data already successfully saved
+        } else if (!!operation.FailTime) {
+            // in case of error between broadcasting transaction and saving operation state
+            // operation may be already processed by tracking job
+            throw new BlockchainError(400, operation.Error, operation.ErrorCode);        
+        } else if (!!operation.SendTime || !!operation.CompletionTime) {
             throw new BlockchainError(409, `Operation [${request.operationId}] already ${this.getState(operation)}`);
         }
 

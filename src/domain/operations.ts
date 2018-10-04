@@ -50,9 +50,10 @@ export class OperationEntity extends AzureEntity {
     DeleteTime: Date;
 
     /**
-     * Returns true if operation is not fully processed by common services (is sent, completed or failed),
-     * otherwise false (is just built or already deleted).
+     * Returns true if operation is not fully processed by common services (i.e. is sent, completed or failed),
+     * otherwise false (ie. is just built or already deleted).
      */
+    @Ignore()
     get isRunning(): boolean {
         return !!this.SendTime || !!this.CompletionTime || !!this.FailTime;
     }
