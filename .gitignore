@@ -65,3 +65,10 @@ appsettings*.json
 
 # Build artifacts
 build
+
+# VS misc files
+.vs
+
+# C# specific files
+migration/obj
+migration/bin
