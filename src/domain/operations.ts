@@ -48,6 +48,7 @@ export class OperationEntity extends AzureEntity {
     Error: string;
     ErrorCode: ErrorCode;
     DeleteTime: Date;
+    BlockchainError: string;
 
     /**
      * Returns true if operation is not fully processed by common services (i.e. is sent, completed or failed),
@@ -118,7 +119,7 @@ export class OperationRepository extends AzureRepository {
     }
 
     async update(operationId: string,
-        operation: { sendTime?: Date, completionTime?: Date, failTime?: Date, deleteTime?: Date, txId?: string, blockTime?: Date, block?: number, error?: string, errorCode?: ErrorCode }) {
+        operation: { sendTime?: Date, completionTime?: Date, failTime?: Date, deleteTime?: Date, txId?: string, blockTime?: Date, block?: number, error?: string, errorCode?: ErrorCode, blockchainError?: string }) {
         
         // update transaction index
         if (!!operation.txId) {
@@ -143,6 +144,7 @@ export class OperationRepository extends AzureRepository {
         operationEntity.Block = operation.block;
         operationEntity.Error = operation.error;
         operationEntity.ErrorCode = operation.errorCode;
+        operationEntity.BlockchainError = operation.blockchainError;
 
         await this.insertOrMerge(this.operationTableName, operationEntity);
     }
