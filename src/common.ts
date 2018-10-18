@@ -102,7 +102,7 @@ export function isRippleAddress(str: string): boolean {
     }
 
     const parts = str.split(ADDRESS_SEPARATOR);
-    const tag = parseInt(parts[1]);
+    const tag = Number(parts[1]);
 
     if (!rippleAddressRegExp.test(parts[0]) || (!!parts[1] && (isNaN(tag) || tag < 0 || tag > 4294967295))) {
         return false;
