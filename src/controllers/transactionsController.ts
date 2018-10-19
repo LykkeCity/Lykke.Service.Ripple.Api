@@ -395,7 +395,8 @@ export class TransactionsController {
                 hash: operation.TxId,
                 block: operation.Block,
                 error: operation.Error,
-                errorCode: operation.ErrorCode
+                errorCode: operation.ErrorCode,
+                blockchainError: operation.BlockchainError
             };
         } else {
             return null;
