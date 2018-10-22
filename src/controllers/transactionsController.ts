@@ -311,6 +311,18 @@ export class TransactionsController {
         const data = fromBase64<SignedTransactionModel>(request.signedTransaction);
         const txId = data.id;
 
+        // prevent tx hash duplication issues
+        const operationIdByTxId = await this.operationRepository.getOperationIdByTxId(txId);
+        if (!!operationIdByTxId && operationIdByTxId != operation.OperationId) {
+            const message = "Duplicated transaction hash";
+            await this.logService.write(LogLevel.warning, TransactionsController.name, this.broadcast.name, message, txId);
+            await this.operationRepository.update(operation.OperationId, { blockchainError: message });
+            throw new BlockchainError(400, message, ErrorCode.buildingShouldBeRepeated, {
+                operationIdByTxId,
+                operation
+            });
+        }
+
         // connect operation to transaction before broadcasting to process transaction
         // correctly in case of errors between broadcasting and saving operation state 
         await this.operationRepository.update(operation.OperationId, { txId });
@@ -323,6 +335,11 @@ export class TransactionsController {
             // and mark operation as sent
 
             const result = await this.rippleService.submit(data.signedTransaction);
+
+            if (result.resultCode != "tesSUCCESS") {
+                await this.logService.write(LogLevel.warning, TransactionsController.name, this.broadcast.name, "BlockchainError", result.resultCode);
+                await this.operationRepository.update(operation.OperationId, { blockchainError: result.resultCode });
+            }
 
             // most of broadcasting result states are not final and even valid transaction may be not applied due to various reasons,
             // so we delegate recognizing transaction state to tracking job and return OK at the moment;
@@ -378,7 +395,8 @@ export class TransactionsController {
                 hash: operation.TxId,
                 block: operation.Block,
                 error: operation.Error,
-                errorCode: operation.ErrorCode
+                errorCode: operation.ErrorCode,
+                blockchainError: operation.BlockchainError
             };
         } else {
             return null;
