@@ -37,7 +37,7 @@ export class RippleService {
     }
 
     getLedgerVersion(): Promise<number> {
-        return this.api().then(api => api.getLedgerVersion());
+        return this.api().then(api => api.getServerInfo()).then(info => info.validatedLedger.ledgerVersion);
     }
 
     getBalances(address: string): Promise<Balance[]> {
