@@ -17,20 +17,24 @@ export class AddressesController {
     @Get("/:address/validity")
     async isValid(@Param("address") address: string) {
 
+        let isValid = false;
+
         if (isRippleAddress(address)) {
 
-            var addressParts = address.split(ADDRESS_SEPARATOR);
-            var accountExist = await this.rippleService.getAccountInfo(addressParts[0]).then(_ => true).catch(_ => false);
+            const addressParts = address.split(ADDRESS_SEPARATOR);
+            const accountExist = await this.rippleService.getAccountInfo(addressParts[0]).then(_ => true).catch(_ => false);
 
             if (accountExist) {
         
-                var accountSettings = (await this.rippleService.getSettings(addressParts[0])) || {};
-                var addressIsTagged = addressParts.length > 1;
+                const accountSettings = (await this.rippleService.getSettings(addressParts[0])) || {};
+                const addressIsTagged = addressParts.length > 1;
 
-                return !accountSettings.requireDestinationTag || addressIsTagged;
+                isValid = !accountSettings.requireDestinationTag || addressIsTagged;
             }
         }
 
-        return false;
+        return {
+            isValid
+        };
     }
 }
