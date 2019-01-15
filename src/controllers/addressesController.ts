@@ -24,7 +24,7 @@ export class AddressesController {
 
             if (accountExist) {
         
-                var accountSettings = (await this.rippleService.getSettings(address)) || {};
+                var accountSettings = (await this.rippleService.getSettings(addressParts[0])) || {};
                 var addressIsTagged = addressParts.length > 1;
 
                 return !accountSettings.requireDestinationTag || addressIsTagged;
