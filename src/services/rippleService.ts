@@ -6,6 +6,7 @@ import { Payment } from "ripple-lib/dist/npm/transaction/payment";
 import { FormattedGetAccountInfoResponse } from "ripple-lib/dist/npm/ledger/accountinfo";
 import { FormattedSubmitResponse } from "ripple-lib/dist/npm/transaction/submit";
 import { Balance } from "ripple-lib/dist/npm/ledger/balances";
+import { FormattedSettings } from "ripple-lib/dist/npm/common/types/objects";
 
 @Service()
 export class RippleService {
@@ -46,5 +47,9 @@ export class RippleService {
 
     submit(signedTransaction: string): Promise<FormattedSubmitResponse> {
         return this.api().then(api => api.submit(signedTransaction));
+    }
+
+    getSettings(address: string): Promise<FormattedSettings> {
+        return this.api().then(api => api.getSettings(address));
     }
 }
