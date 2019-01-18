@@ -20,17 +20,11 @@ export class AddressesController {
         let isValid = false;
 
         if (isRippleAddress(address)) {
-
             const addressParts = address.split(ADDRESS_SEPARATOR);
-            const accountExist = await this.rippleService.getAccountInfo(addressParts[0]).then(_ => true).catch(_ => false);
+            const addressIsTagged = addressParts.length > 1;
+            const accountSettings = await this.rippleService.getSettings(addressParts[0]).catch(_ => undefined);
 
-            if (accountExist) {
-        
-                const accountSettings = (await this.rippleService.getSettings(addressParts[0])) || {};
-                const addressIsTagged = addressParts.length > 1;
-
-                isValid = !accountSettings.requireDestinationTag || addressIsTagged;
-            }
+            isValid = !!accountSettings && (!accountSettings.requireDestinationTag || addressIsTagged);
         }
 
         return {
