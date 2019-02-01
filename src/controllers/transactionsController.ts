@@ -309,7 +309,12 @@ export class TransactionsController {
         const blockTime = operation.BlockTime || sendTime;
         const completionTime = operation.CompletionTime || sendTime;
         const data = fromBase64<SignedTransactionModel>(request.signedTransaction);
-        const txId = data.id;
+
+        // for now operation may be processed by multiple threads,
+        // if process is parallelized before signing then simulated transaction may be broadcasted
+        // multiple times with different hashes (due to using timestamp as transaction hash);
+        // to prevent double spending for simulated transactions we use operation ID instead of timestamp as transaction hash;
+        const txId = data.id || operation.OperationId.replace(/[{}-]/g, "");
 
         // prevent tx hash duplication issues
         const operationIdByTxId = await this.operationRepository.getOperationIdByTxId(txId);
