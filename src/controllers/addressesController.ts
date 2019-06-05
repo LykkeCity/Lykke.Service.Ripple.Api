@@ -24,7 +24,9 @@ export class AddressesController {
             const addressIsTagged = addressParts.length > 1;
             const accountSettings = await this.rippleService.getSettings(addressParts[0]).catch(_ => undefined);
 
-            isValid = !!accountSettings && (!accountSettings.requireDestinationTag || addressIsTagged);
+            // Nonexistent account is valid (will be created if transfer amount is enough for reserve).
+            // Existent account is valid if destination tag is not required, or if tag is specified.
+            isValid = !accountSettings || !accountSettings.requireDestinationTag || addressIsTagged;
         }
 
         return {
