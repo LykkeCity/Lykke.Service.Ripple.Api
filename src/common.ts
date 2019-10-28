@@ -104,7 +104,7 @@ export function isRippleAddress(str: string): boolean {
     const parts = str.split(ADDRESS_SEPARATOR);
     const tag = Number(parts[1]);
 
-    if (!addressCodec.isValidAccountID(parts[0]) || (!!parts[1] && parts[1] != "0" && (!positiveIntegerRegExp.test(parts[1]) || isNaN(tag) || tag > 4294967295))) {
+    if (!addressCodec.isValidAddress(parts[0]) || (!!parts[1] && parts[1] != "0" && (!positiveIntegerRegExp.test(parts[1]) || isNaN(tag) || tag > 4294967295))) {
         return false;
     }
 
