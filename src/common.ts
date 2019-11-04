@@ -7,11 +7,11 @@ import axios from "axios";
 import fs from "fs";
 import * as appInsights from "applicationinsights";
 
+const addressCodec = require('ripple-address-codec');
 const pkg = require("../package.json");
 const uuidRegExp = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const positiveIntegerRegExp = /^[1-9]\d*$/;
 const azureKeyInvalidCharsRegExp = /[\/\\#?\n\r\t\u0000-\u001F\u007F-\u009F]/gmi;
-const rippleAddressRegExp = /^r[rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz]{27,35}$/;
 
 export const APP_NAME = pkg.name;
 
@@ -104,7 +104,7 @@ export function isRippleAddress(str: string): boolean {
     const parts = str.split(ADDRESS_SEPARATOR);
     const tag = Number(parts[1]);
 
-    if (!rippleAddressRegExp.test(parts[0]) || (!!parts[1] && parts[1] != "0" && (!positiveIntegerRegExp.test(parts[1]) || isNaN(tag) || tag > 4294967295))) {
+    if (!addressCodec.isValidAddress(parts[0]) || (!!parts[1] && parts[1] != "0" && (!positiveIntegerRegExp.test(parts[1]) || isNaN(tag) || tag > 4294967295))) {
         return false;
     }
 
